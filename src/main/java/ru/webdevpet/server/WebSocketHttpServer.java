@@ -8,18 +8,32 @@ import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import com.fasterxml.jackson.*;
+import java.net.URL;
+
+import ru.webdevpet.server.config.Config;
+import ru.webdevpet.server.config.ConfigValidator;
+
 public class WebSocketHttpServer {
+    public Config config;
 
+    public WebSocketHttpServer(Config config) throws Exception {
+        this.config=config;
+       try{
+           ConfigValidator.validate(config);
+       }
+       catch (Exception e){
+           throw new Exception("Error parse config file" + e.getMessage());
+       }
+    }
 
+    public void start() throws Exception {
 
-    public  void start() throws Exception {
+        WebSockServer webSockServer = new WebSockServer(config,this);
+        webSockServer.start();
 
-        WebSockServer s = new WebSockServer(8090);
-        s.start();
-
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress(8080), 0);
+        HttpServer httpServer = HttpServer.create(new InetSocketAddress(config.getHttpPort()), 0);
         httpServer.createContext("/send", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -31,10 +45,16 @@ public class WebSocketHttpServer {
                         ObjectMapper objectMapper = new ObjectMapper();
                         HttpMessage httpMessage = objectMapper.readValue(requestBody, HttpMessage.class);
                         if(!isNullEmpty(httpMessage.channel) && !isNullEmpty(httpMessage.message)){
-                            s.sendMessageChanel(httpMessage.message,httpMessage.channel);
+                            webSockServer.sendMessageChanel(httpMessage.message,httpMessage.channel);
                         }
                     }
                     catch (Exception e) {
+                        try {
+                            webSockServer.stopServer();
+                        } catch (InterruptedException interruptedException) {
+                            interruptedException.printStackTrace();
+                        }
+
                         System.out.println(e.getMessage());
                     }
 
@@ -70,6 +90,34 @@ public class WebSocketHttpServer {
     private boolean isNullEmpty(String str) {
         return str == null || str.trim().isEmpty();
     }
+
+    public  boolean sendPostRequest(String email) {
+        HttpURLConnection connection = null;
+
+        try {
+
+            URL url = new URL(config.getAuthorizeUserURL()+"?email="+email);
+
+            connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-Type", "application/text; utf-8");
+            connection.setRequestProperty("Accept", "application/text");
+
+
+
+            int responseCode = connection.getResponseCode();
+            return responseCode == HttpURLConnection.HTTP_OK;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
 
 }
 

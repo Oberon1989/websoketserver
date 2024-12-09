@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '6.1.0'  // Совместимая версия для Gradle 6.9.4
+}
+
+group = "ru.webdevpet.server"
+version = "1.0"
+
+repositories {
+    mavenCentral()
+
+}
+
+dependencies {
+    implementation 'org.java-websocket:Java-WebSocket:1.5.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.0'
+}
+
+application {
+    mainClass = 'ru.webdevpet.server.Main'
+}
+shadowJar {
+    mainClassName = 'ru.webdevpet.server.Main'  // Укажите ваш главный класс
+    manifest {
+        attributes(
+                'Main-Class': 'ru.webdevpet.server.Main'  // Укажите ваш главный класс
+        )
+    }
+    baseName = 'server'  // Имя создаваемого JAR файла
+    classifier = ''  // Чтобы не добавлялся суффикс, например '-all'
+    version = '1.0'  // Версия JAR
+}
