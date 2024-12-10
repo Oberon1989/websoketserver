@@ -12,6 +12,12 @@ repositories {
 
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
 dependencies {
     implementation 'org.java-websocket:Java-WebSocket:1.5.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.0'
@@ -22,13 +28,13 @@ application {
     mainClass = 'ru.webdevpet.server.Main'
 }
 shadowJar {
-    mainClassName = 'ru.webdevpet.server.Main'  // Укажите ваш главный класс
+    mainClassName = 'ru.webdevpet.server.Main'
     manifest {
         attributes(
-                'Main-Class': 'ru.webdevpet.server.Main'  // Укажите ваш главный класс
+                'Main-Class': 'ru.webdevpet.server.Main'
         )
     }
-    baseName = 'server'  // Имя создаваемого JAR файла
-    classifier = ''  // Чтобы не добавлялся суффикс, например '-all'
-    version = '1.0'  // Версия JAR
+    baseName = 'server'
+    classifier = ''
+    version = '1.0'
 }

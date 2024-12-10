@@ -13,15 +13,18 @@ public class WebSockServer extends WebSocketServer {
 
     private final Set<Client> clients = new CopyOnWriteArraySet<>();
     private final WebSocketHttpServer http;
-    public WebSockServer(Config config,WebSocketHttpServer http) {
+    private final boolean auth;
+    public WebSockServer(Config config,WebSocketHttpServer http,boolean notAuthEmail) {
         super(new InetSocketAddress(config.getWebsocketPort()));
         this.http=http;
+        this.auth=notAuthEmail;
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
 
         if(validateConnection(conn,handshake)){
+            System.out.println("conenctiong client");
             String channel = getParameter(handshake.getResourceDescriptor(),"channel");
             clients.add(new Client(conn, channel));
         }
@@ -39,22 +42,32 @@ public class WebSockServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
+        System.out.println(message);
         Client client = getClient(conn);
         if(client!=null) {
-            sendMessageChanel(client,client.getChannel(),message);
+            sendMessageChanel(client,message,client.getChannel());
         }
     }
 
     private void sendMessageChanel(Client currentClient, String message, String channel) {
-        clients.stream()
-                .filter(client -> !client.getSocket().equals(currentClient.getSocket()) && channel.equals(client.getChannel()))
-                .forEach(client -> {
-                    try {
-                        client.getSocket().send(message);
-                    } catch (Exception e) {
-                        System.out.println("Error sending message to client: " + e.getMessage());
-                    }
-                });
+
+        for (Client client : clients) {
+            if(!client.equals(currentClient)) {
+                if(client.getChannel().equals(channel)) {
+                    client.send(message);
+                }
+            }
+        }
+
+//        clients.stream()
+//                .filter(client -> !client.getSocket().equals(currentClient.getSocket()) && channel.equals(client.getChannel()))
+//                .forEach(client -> {
+//                    try {
+//                        client.getSocket().send(message);
+//                    } catch (Exception e) {
+//                        System.out.println("Error sending message to client: " + e.getMessage());
+//                    }
+//                });
     }
     public void sendMessageChanel(String message, String channel) {
 
@@ -125,27 +138,42 @@ public class WebSockServer extends WebSocketServer {
                 conn.close(1003);
                 return false;
             }
-            if(email==null) {
-                conn.send("Missing email. Connection will be closed");
-                conn.close(1003);
-                return false;
+            if(auth){
+                if(!isOneServer(conn)){
+                    if(email==null) {
+                        conn.send("Missing email. Connection will be closed");
+                        conn.close(1003);
+                        return false;
+                    }
+
+                    if(token==null) {
+                        conn.send("Missing token. Connection will be closed");
+                        conn.close(1003);
+                        return false;
+                    }
+
+                    if(!token.equals(http.config.getToken())){
+                        conn.send("Invalid token. Connection will be closed");
+                        conn.close(1003);
+                        return false;
+                    }
+
+
+                    if(!http.sendPostRequest(email)){
+                        conn.send("Failed to authorize email, Connection will be closed");
+                        conn.close(1003);
+                        return false;
+                    }
+
+                }
+                return true;
             }
-            if(token==null) {
-                conn.send("Missing token. Connection will be closed");
-                conn.close(1003);
-                return false;
+            else {
+                return true;
             }
-            if(!token.equals(http.config.getToken())){
-                conn.send("Invalid token. Connection will be closed");
-                conn.close(1003);
-                return false;
-            }
-            if(!http.sendPostRequest(email)){
-                conn.send("Failed to authorize email, Connection will be closed");
-                conn.close(1003);
-                return false;
-            }
-            return true;
+
+
+
         }
         catch (Exception ex){
             if(conn.isOpen()){
@@ -158,6 +186,11 @@ public class WebSockServer extends WebSocketServer {
 
     }
 
+    public boolean isOneServer(WebSocket conn) {
+        String localIp = conn.getLocalSocketAddress().getAddress().getHostAddress();
+        String remoteIp = conn.getRemoteSocketAddress().getAddress().getHostAddress();
+        return localIp.equals(remoteIp);
+    }
 
 
 }

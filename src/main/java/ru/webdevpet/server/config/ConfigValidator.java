@@ -39,7 +39,6 @@ public class ConfigValidator {
 
     private static boolean isValidUrl(String url) {
 
-        System.out.println(url.length());
 
         if (url.trim().isEmpty()) {
             return false;

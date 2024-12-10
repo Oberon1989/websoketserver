@@ -17,9 +17,10 @@ import ru.webdevpet.server.config.ConfigValidator;
 
 public class WebSocketHttpServer {
     public Config config;
-
-    public WebSocketHttpServer(Config config) throws Exception {
+    private final boolean auth;
+    public WebSocketHttpServer(Config config,boolean auth) throws Exception {
         this.config=config;
+        this.auth=auth;
        try{
            ConfigValidator.validate(config);
        }
@@ -30,7 +31,7 @@ public class WebSocketHttpServer {
 
     public void start() throws Exception {
 
-        WebSockServer webSockServer = new WebSockServer(config,this);
+        WebSockServer webSockServer = new WebSockServer(config,this,auth);
         webSockServer.start();
 
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(config.getHttpPort()), 0);
@@ -95,9 +96,10 @@ public class WebSocketHttpServer {
         HttpURLConnection connection = null;
 
         try {
-
+            connection.setReadTimeout(1);
             URL url = new URL(config.getAuthorizeUserURL()+"?email="+email);
-
+            connection.setConnectTimeout(5000); // Таймаут на подключение (5 секунд)
+            connection.setReadTimeout(5000);
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("GET");

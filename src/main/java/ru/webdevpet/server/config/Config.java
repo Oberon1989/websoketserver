@@ -59,7 +59,7 @@ public class Config {
                 ConfigValidator.validate(config);
                 return config;
             } catch (Exception ex) {
-                System.out.println("Error parsing config112: " + ex.getMessage());
+                System.out.println("Error parsing config: " + ex.getMessage());
                 return null;
             }
         } else {

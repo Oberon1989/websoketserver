@@ -17,4 +17,8 @@ public class Client {
     public WebSocket getSocket() {
         return socket;
     }
+
+    public void send(String message) {
+        socket.send(message);
+    }
 }
