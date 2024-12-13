@@ -3,14 +3,14 @@ package ru.webdevpet.server;
 import org.java_websocket.WebSocket;
 
 public class Client {
-    private WebSocket socket;
-    private String channel;
-    public Client(WebSocket socket, String channel) {
+    private final WebSocket socket;
+    private final Channel channel;
+    public Client(WebSocket socket, Channel channel) {
         this.socket = socket;
         this.channel = channel;
     }
 
-    public String getChannel() {
+    public Channel getChannel() {
         return channel;
     }
 

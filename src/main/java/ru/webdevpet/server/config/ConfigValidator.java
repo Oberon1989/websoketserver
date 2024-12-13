@@ -11,58 +11,32 @@ public class ConfigValidator {
         if (config == null) {
             throw new IllegalArgumentException("Config cannot be null");
         }
-        if (!isValidPort(config.getHttpPort())) {
+        if (isValidPort(config.getHttpPort())) {
             throw new IllegalArgumentException("Invalid HTTP port: " + config.getHttpPort());
         }
-        if (!isValidPort(config.getWebsocketPort())) {
+        if (isValidPort(config.getWebsocketPort())) {
             throw new IllegalArgumentException("Invalid WebSocket port: " + config.getWebsocketPort());
         }
 
 
-        if (config.getToken() == null || config.getToken().trim().isEmpty()) {
-            throw new IllegalArgumentException("Token cannot be null or empty");
-        }
-
-
-
-            if (!isValidUrl(config.getAuthorizeUserURL())) {
-                throw new IllegalArgumentException("Invalid URL: " + config.getAuthorizeUserURL());
-            }
-
+       if(!isValidToken(config.getToken())) {
+           throw new IllegalArgumentException("Invalid token format: " + config.getToken());
+       }
     }
 
 
     private static boolean isValidPort(int port) {
-        return port >= 1 && port <= 65535;
+        return port < 1 || port > 65535;
+    }
+    private static boolean isValidToken(String token) {
+        if (token == null || token.length() != 32) {
+            return false;
+        }
+
+        return token.matches("[0-9a-fA-F]{32}");
     }
 
 
-    private static boolean isValidUrl(String url) {
 
-
-        if (url.trim().isEmpty()) {
-            return false;
-        }
-        Pattern ipWithPortPattern = Pattern.compile(
-                "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(:[0-9]+)?$"
-        );
-
-
-        Matcher matcher = ipWithPortPattern.matcher(url);
-        if (matcher.matches()) {
-            return true;
-        }
-        if (!url.contains("://")) {
-            url = "http://" + url;
-        }
-
-        try {
-            new URL(url);
-            return true;
-        } catch (MalformedURLException e) {
-            System.out.println(e.getMessage());
-            return false;
-        }
-    }
 }
 

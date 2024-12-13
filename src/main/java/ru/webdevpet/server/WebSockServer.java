@@ -11,6 +11,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class WebSockServer extends WebSocketServer {
 
+    private final ChannelManager channelManager;
     private final Set<Client> clients = new CopyOnWriteArraySet<>();
     private final WebSocketHttpServer http;
     private final boolean auth;
@@ -18,6 +19,7 @@ public class WebSockServer extends WebSocketServer {
         super(new InetSocketAddress(config.getWebsocketPort()));
         this.http=http;
         this.auth=notAuthEmail;
+        channelManager = new ChannelManager();
     }
 
     @Override
