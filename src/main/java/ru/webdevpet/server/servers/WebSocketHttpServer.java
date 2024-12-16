@@ -1,22 +1,21 @@
-package ru.webdevpet.server;
+package ru.webdevpet.server.servers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.URL;
 
+import ru.webdevpet.server.client.Client;
 import ru.webdevpet.server.config.Config;
 import ru.webdevpet.server.config.ConfigValidator;
+import ru.webdevpet.server.dto.*;
 
 public class WebSocketHttpServer {
-    public Config config;
+    public final Config config;
+    private WebSockServer webSockServer;
     private final boolean auth;
     public WebSocketHttpServer(Config config,boolean auth) throws Exception {
         this.config=config;
@@ -31,28 +30,28 @@ public class WebSocketHttpServer {
 
     public void start() throws Exception {
 
-        WebSockServer webSockServer = new WebSockServer(config,this,auth);
+         webSockServer = new WebSockServer(config,this,auth);
         webSockServer.start();
 
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(config.getHttpPort()), 0);
         httpServer.createContext("/send", exchange -> {
             if ("POST".equals(exchange.getRequestMethod())) {
-                // Чтение тела запроса
+
                 String requestBody = readRequestBody(exchange.getRequestBody());
 
                 try {
                     ObjectMapper objectMapper = new ObjectMapper();
-                    HttpMessage httpMessage = objectMapper.readValue(requestBody, HttpMessage.class);
-                    if(!isNullEmpty(httpMessage.channel) && !isNullEmpty(httpMessage.message)){
-                        webSockServer.sendMessageChanel(httpMessage.message,httpMessage.channel);
+                    Message message = objectMapper.readValue(requestBody, Message.class);
+                    if (message instanceof BackendBroadcast) {
+                        BackendBroadcast backendMessage = (BackendBroadcast) message;
+                        webSockServer.sendMessageChanel(backendMessage.message, backendMessage.channelName);
+                    }
+
+                    else {
+                        System.out.println("Unknown messageType");
                     }
                 }
                 catch (Exception e) {
-                    try {
-                        webSockServer.stopServer();
-                    } catch (InterruptedException interruptedException) {
-                        interruptedException.printStackTrace();
-                    }
 
                     System.out.println(e.getMessage());
                 }
@@ -84,6 +83,14 @@ public class WebSocketHttpServer {
     }
     private boolean isNullEmpty(String str) {
         return str == null || str.trim().isEmpty();
+    }
+
+    public void StopWebSocketServer(){
+        try {
+            webSockServer.stopServer();
+        } catch (InterruptedException interruptedException) {
+            interruptedException.printStackTrace();
+        }
     }
 
 

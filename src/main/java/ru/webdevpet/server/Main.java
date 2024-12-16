@@ -1,6 +1,7 @@
 package ru.webdevpet.server;
 
 import ru.webdevpet.server.config.Config;
+import ru.webdevpet.server.servers.WebSocketHttpServer;
 
 public class Main {
     public static void main(String[] args) throws Exception {
