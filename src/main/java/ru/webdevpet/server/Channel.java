@@ -15,9 +15,12 @@ public class Channel {
 
 
     public void subscribe(Client client) {
+        client.putChannel(this);
         clientSet.add(client);
+
     }
     public void unsubscribe(Client client) {
+        client.removeChannel(this);
         clientSet.remove(client);
     }
     public String getChannelName() {
@@ -25,10 +28,11 @@ public class Channel {
     }
     public void sendMessage(String message, Client currentClient) {
         for (Client client : clientSet) {
-            if(!client.equals(currentClient)) {
-                client.send(message);
+            if(client!=null){
+                if(!client.equals(currentClient)) {
+                    client.send(message);
+                }
             }
-
         }
     }
     public void sendMessage(String message) {
@@ -43,6 +47,14 @@ public class Channel {
     public Client getClient(WebSocket webSocket) {
         return clientSet.stream().filter(client
                 -> client.getSocket().equals(webSocket)).findFirst().orElse(null);
+    }
+    public void removeClients() {
+        for (Client client : clientSet) {
+            client.send("Chanel removed");
+            unsubscribe(client);
+            client.close();
+
+        }
     }
 }
 

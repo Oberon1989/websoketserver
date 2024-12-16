@@ -3,6 +3,7 @@ package ru.webdevpet.server;
 import org.java_websocket.WebSocket;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class ChannelManager {
@@ -27,6 +28,9 @@ public class ChannelManager {
     public void removeChannel(Client client, String channelName) {
         Channel channel = getChannel(channelName);
         if (channel != null) {
+            if(channel.getClientCount()>0){
+                channel.removeClients();
+            }
             channels.remove(channel);
         }
     }
@@ -38,11 +42,55 @@ public class ChannelManager {
 
     public void CreateClient(WebSocket socket,String channelName) {
         Channel channel = getChannel(channelName);
-        Client client = new Client(socket, channel);
+        Client client = new Client(socket);
         channel.subscribe(client);
+
     }
     public void destroyClient(WebSocket socket) {
-       // Client client = channels.stream().filter(channel -> {channel.getClient()})
+       Client client = channels.stream()
+                .map(channel -> channel.getClient(socket))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+       if(client != null) {
+           Set<Channel> clientChannels = client.getChannels();
+           for(Channel channel : clientChannels){
+               channel.unsubscribe(client);
+           }
+           client.close();
+       }
+    }
+
+
+    public void sendMessageChanel(String message, String chan){
+        Channel channel = getChannel(chan);
+        if(channel != null){
+            channel.sendMessage(message);
+        }
+    }
+    public void sendMessageChanel(Client currentClient, String message, String chan) {
+
+        Channel channel = getChannel(chan);
+        if(channel != null){
+            channel.sendMessage(message, currentClient);
+        }
+    }
+
+
+    public void sendErrorClient(WebSocket conn, int closeCode, String reason, boolean remote) {
+            Client client = getClient(conn);
+            if(client != null){
+                client.send(reason);
+            }
+    }
+
+
+    public Client getClient(WebSocket conn) {
+       return channels.stream()
+                .map(channel -> channel.getClient(conn))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 }
 
